@@ -67,6 +67,6 @@ sudo chmod <разрешения> <объект>
 Пример (выдача полных разрешений для всех пользователей на объект /home/tmp/Folder):
 sudo chmod 777 /home/tmp/Folder
 
-Выдача разрешений на запись для всех остальных пользователей на объект /home/tmp/Folder/f1/txt
-sudo chmod o+w /home/tmp/Folder/f1/txt
+Выдача разрешений на запись для всех остальных пользователей на объект /home/tmp/Folder/f1.txt
+sudo chmod o+w /home/tmp/Folder/f1.txt
      
