@@ -69,4 +69,100 @@ sudo chmod 777 /home/tmp/Folder
 
 Выдача разрешений на запись для всех остальных пользователей на объект /home/tmp/Folder/f1.txt
 sudo chmod o+w /home/tmp/Folder/f1.txt
-     
+
+Специальные биты доступа: SUID, GUID, sticky bit
+ 1. SUID - позволяет запускать файл от имени его владельца
+От имени root запускаются некоторые системные программы, требующие повышенных прав, но разрешенные для запуска обычным пользователем (/bin/passwd)
+
+Установка SUID:
+sudo chmod u+s <имя файла>
+sudo chmod 4755 <имя файла>
+
+Если для владельца не разрешено выполнение файла, то при установленном SUID-бите S указывается в виде прописной буквы:
+Пример: (4664/-rwSrw-r--)
+
+student@alexander-VirtualBox:~$ stat student
+  Файл: student
+  Размер: 0         	Блоков: 0          Блок В/В: 4096   пустой обычный файл
+Устройство: 803h/2051d	Инода: 938541      Ссылки: 1
+Доступ: (0664/-rw-rw-r--)  Uid: ( 1001/ student)   Gid: ( 1001/ student)
+
+student@alexander-VirtualBox:~$ sudo chmod u+s student
+student@alexander-VirtualBox:~$ stat student
+  Файл: student
+  Размер: 0         	Блоков: 0          Блок В/В: 4096   пустой обычный файл
+Устройство: 803h/2051d	Инода: 938541      Ссылки: 1
+Доступ: (4664/-rwSrw-r--)  Uid: ( 1001/ student)   Gid: ( 1001/ student)
+
+student@alexander-VirtualBox:~$ sudo chmod +x student
+student@alexander-VirtualBox:~$ stat student
+  Файл: student
+  Размер: 52        	Блоков: 8          Блок В/В: 4096   обычный файл
+Устройство: 803h/2051d	Инода: 938541      Ссылки: 1
+Доступ: (4775/-rwsrwxr-x)  Uid: ( 1002/     tmp)   Gid: ( 1001/ student)
+
+При смене владельца файла SUID-бит сбрасывается:
+student@alexander-VirtualBox:~$ sudo chown tmp student
+student@alexander-VirtualBox:~$ stat student
+  Файл: student
+  Размер: 52        	Блоков: 8          Блок В/В: 4096   обычный файл
+Устройство: 803h/2051d	Инода: 938541      Ссылки: 1
+Доступ: (0775/-rwxrwxr-x)  Uid: ( 1002/     tmp)   Gid: ( 1001/ student)
+
+SUID-бит имеет смысл применять только к исполняемым файлам, но не к папкам.
+
+ 2. GUID-бит - устанавливается как для файлов, так и для папок. Запускает файл от имени группы владельцев, устанавливает правила наследования группы для всех объектов внутри папки с установленным GUID-битом.
+
+Для установки GUID-бита выполняем команду chmod от имени администратора:
+sudo chmod g+s <имя файла или папки>
+sudo chmod 2775  <имя файла или папки>
+
+student@alexander-VirtualBox:~$ stat Fold1
+  Файл: Fold1
+  Размер: 4096      	Блоков: 8          Блок В/В: 4096   каталог
+Устройство: 803h/2051d	Инода: 1218975     Ссылки: 2
+Доступ: (0775/drwxrwxr-x)  Uid: ( 1001/ student)   Gid: ( 1001/ student)
+Доступ:        2024-11-02 13:00:33.639764096 +0700
+Модифицирован: 2024-11-02 13:00:33.639764096 +0700
+Изменён:       2024-11-02 13:00:33.639764096 +0700
+Создан:        2024-11-02 13:00:33.639764096 +0700
+
+student@alexander-VirtualBox:~$ sudo chmod g+s Fold1
+student@alexander-VirtualBox:~$ stat Fold1
+  Файл: Fold1
+  Размер: 4096      	Блоков: 8          Блок В/В: 4096   каталог
+Устройство: 803h/2051d	Инода: 1218975     Ссылки: 2
+Доступ: (2775/drwxrwsr-x)  Uid: ( 1001/ student)   Gid: ( 1001/ student)
+
+После установки GUID-бита все объекты, созданные в папке содержат группу владельцев, унаследованную от родителя.
+При этом дочерние папки создаются с уже установленным GUID-битом.
+
+3. Sticky-бит - устанавливается только для папок и меняет правила удаления объектов внутри папки
+Установка бита:
+sudo chmod o+t <имя папки>
+sudo chmod 1777 <имя папки>
+
+Внутри папок с утановленным t-битом для пользователей, имеющих право на запись, но не являющихся владьцем файлов, устанавливается запрет на удаление файлов. При этом запись в любой файл может быть разрешена.
+
+student@alexander-VirtualBox:~/Fold2$ sudo chmod o+t Fold4
+student@alexander-VirtualBox:~/Fold2$ su tmp
+Пароль: 
+tmp@alexander-VirtualBox:/home/student/Fold2$ cd Fold4
+tmp@alexander-VirtualBox:/home/student/Fold2/Fold4$ touch 1
+tmp@alexander-VirtualBox:/home/student/Fold2/Fold4$ touch 2
+tmp@alexander-VirtualBox:/home/student/Fold2/Fold4$ touch 3
+tmp@alexander-VirtualBox:/home/student/Fold2/Fold4$ touch 4
+
+tmp@alexander-VirtualBox:/home/student/Fold2/Fold4$ stat ./
+  Файл: ./
+  Размер: 4096      	Блоков: 8          Блок В/В: 4096   каталог
+Устройство: 803h/2051d	Инода: 1219280     Ссылки: 2
+Доступ: (1775/drwxrwxr-t)  Uid: ( 1002/     tmp)   Gid: ( 1004/ tempgrp)
+
+tmp@alexander-VirtualBox:/home/student/Fold2/Fold4$ exit
+
+student@alexander-VirtualBox:~/Fold2/Fold4$ rm 3
+rm: удалить защищённый от записи пустой обычный файл '3'? y
+rm: невозможно удалить '3': Отказано в доступе
+
+
